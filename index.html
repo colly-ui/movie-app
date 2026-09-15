@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMax - Top Rated 7.5+ Content</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #f59e0b;
+            --text-color: #f8fafc;
+            --secondary-text: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .btn {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 2px solid transparent;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn.active, .btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        input {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid #334155;
+            padding: 10px 15px;
+            border-radius: 20px;
+            outline: none;
+            width: 250px;
+        }
+
+        .grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+        }
+
+        .poster {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: var(--accent-color);
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid var(--accent-color);
+        }
+
+        .card-details {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        .title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .release-date {
+            font-size: 0.85rem;
+            color: var(--secondary-text);
+            margin-bottom: 12px;
+        }
+
+        .trailer-btn {
+            display: block;
+            text-align: center;
+            background-color: var(--accent-color);
+            color: #000;
+            text-decoration: none;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+        }
+
+        .trailer-btn:hover {
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            grid-column: 1 / -1;
+            font-size: 1.2rem;
+            color: var(--secondary-text);
+            padding: 50px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>CineMax 7.5+</h1>
+        <div class="controls">
+            <button class="btn active" id="movieBtn" onclick="setType('movie')">Movies</button>
+            <button class="btn" id="tvBtn" onclick="setType('tv')">TV Series</button>
+            <input type="text" id="searchInput" placeholder="Search titles..." oninput="handleSearch()">
+        </div>
+    </header>
+
+    <main class="grid" id="contentGrid">
+        <div class="loading">Loading top-rated content...</div>
+    </main>
+
+    <script>
+        // Your newly generated API Key
+        const API_KEY = '13cf168925d94b1582643b2f6777af75'; 
+        const BASE_URL = 'https://api.themoviedb.org/3';
+
+        let currentType = 'movie'; // 'movie' or 'tv'
+        let allResults = [];
+
+        // Fetch top-rated titles with minimum 7.5 rating
+        async function fetchContent() {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '<div class="loading">Fetching high-rated titles...</div>';
+            
+            try {
+                let results = [];
+                // Fetch multiple pages to get a broad list of titles
+                for (let page = 1; page <= 4; page++) {
+                    const res = await fetch(`${BASE_URL}/${currentType}/top_rated?api_key=${API_KEY}&language=en-US&page=${page}`);
+                    const data = await res.json();
+                    if (data.results) {
+                        results = results.concat(data.results);
+                    }
+                }
+
+                // Filter specifically for items rated 7.5 or higher
+                allResults = results.filter(item => item.vote_average >= 7.5);
+                
+                renderCards(allResults);
+            } catch (error) {
+                grid.innerHTML = '<div class="loading">Failed to load content. Please check your network connection.</div>';
+                console.error(error);
+            }
+        }
+
+        // Render card UI elements
+        function renderCards(items) {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '';
+
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="loading">No results found with 7.5+ rating.</div>';
+                return;
+            }
+
+            items.forEach(item => {
+                const title = item.title || item.name;
+                const releaseDate = item.release_date || item.first_air_date || 'N/A';
+                const poster = item.poster_path 
+                    ? `https://image.tmdb.org/t/p/w500${item.poster_path}` 
+                    : 'https://via.placeholder.com/500x750?text=No+Poster';
+                const rating = item.vote_average.toFixed(1);
+                
+                const searchQuery = encodeURIComponent(`${title} ${currentType === 'movie' ? 'movie' : 'series'} trailer`);
+                const youtubeUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="badge">★ ${rating}</div>
+                    <img class="poster" src="${poster}" alt="${title}" loading="lazy">
+                    <div class="card-details">
+                        <div>
+                            <div class="title" title="${title}">${title}</div>
+                            <div class="release-date">Released: ${releaseDate.split('-')[0]}</div>
+                        </div>
+                        <a href="${youtubeUrl}" target="_blank" class="trailer-btn">Watch Trailer</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Switch between Movies and TV Series
+        function setType(type) {
+            currentType = type;
+            document.getElementById('movieBtn').classList.toggle('active', type === 'movie');
+            document.getElementById('tvBtn').classList.toggle('active', type === 'tv');
+            document.getElementById('searchInput').value = '';
+            fetchContent();
+        }
+
+        // Filter contents by search input
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allResults.filter(item => {
+                const title = (item.title || item.name).toLowerCase();
+                return title.includes(query);
+            });
+            renderCards(filtered);
+        }
+
+        // Initial Load
+        fetchContent();
+    </script>
+</body>
+</html>
