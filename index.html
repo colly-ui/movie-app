@@ -183,31 +183,31 @@
     </main>
 
     <script>
-        // Your newly generated API Key
         const API_KEY = '13cf168925d94b1582643b2f6777af75'; 
         const BASE_URL = 'https://api.themoviedb.org/3';
 
         let currentType = 'movie'; // 'movie' or 'tv'
         let allResults = [];
 
-        // Fetch top-rated titles with minimum 7.5 rating
+        // Fetch famous 7.5+ content using Discover endpoint filtered by vote count
         async function fetchContent() {
             const grid = document.getElementById('contentGrid');
             grid.innerHTML = '<div class="loading">Fetching high-rated titles...</div>';
             
             try {
                 let results = [];
-                // Fetch multiple pages to get a broad list of titles
-                for (let page = 1; page <= 4; page++) {
-                    const res = await fetch(`${BASE_URL}/${currentType}/top_rated?api_key=${API_KEY}&language=en-US&page=${page}`);
+                // Fetch first 5 pages sorted by popularity with high rating & vote thresholds
+                for (let page = 1; page <= 5; page++) {
+                    const endpoint = `${BASE_URL}/discover/${currentType}?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&vote_average.gte=7.5&vote_count.gte=300&page=${page}`;
+                    const res = await fetch(endpoint);
                     const data = await res.json();
                     if (data.results) {
                         results = results.concat(data.results);
                     }
                 }
 
-                // Filter specifically for items rated 7.5 or higher
-                allResults = results.filter(item => item.vote_average >= 7.5);
+                // Strict client-side filter to guarantee 7.5+ vote average & valid poster
+                allResults = results.filter(item => item.vote_average >= 7.5 && item.poster_path);
                 
                 renderCards(allResults);
             } catch (error) {
@@ -229,9 +229,7 @@
             items.forEach(item => {
                 const title = item.title || item.name;
                 const releaseDate = item.release_date || item.first_air_date || 'N/A';
-                const poster = item.poster_path 
-                    ? `https://image.tmdb.org/t/p/w500${item.poster_path}` 
-                    : 'https://via.placeholder.com/500x750?text=No+Poster';
+                const poster = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
                 const rating = item.vote_average.toFixed(1);
                 
                 const searchQuery = encodeURIComponent(`${title} ${currentType === 'movie' ? 'movie' : 'series'} trailer`);
